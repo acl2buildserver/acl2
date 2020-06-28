@@ -9,7 +9,7 @@ echo " -- Running on `hostname`"
 echo " -- PATH is $PATH"
 
 #source $TEAMCITY_HOME/env.sh
-source `pwd`env.sh
+source `pwd`/env.sh
 
 ACL2DIR=`pwd`
 #alias startjob='bash'
