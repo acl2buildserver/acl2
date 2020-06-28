@@ -36,7 +36,7 @@ bash -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.log" 
 
 echo "Building the books."
 cd books
-$STARTJOB -c "nice -n 5 make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
+bash -c "nice -n 5 make $TARGET ACL2=$WORKSPACE/saved_acl2 -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS USE_QUICKLISP=1"
 
 echo "Build was successful."
 
