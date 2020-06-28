@@ -12,7 +12,7 @@ echo " -- PATH is $PATH"
 source `pwd`/books/build/teamcity/env.sh
 
 ACL2DIR=`pwd`
-#alias startjob='bash'
+alias startjob='bash'
 
 if [ -z "$TARGET" ]; then
   echo "Setting TARGET automatically";
