@@ -12,7 +12,7 @@ echo " -- PATH is $PATH"
 source `pwd`/books/build/teamcity/env.sh
 
 ACL2DIR=`pwd`
-alias startjob='bash'
+#alias startjob='bash'
 
 if [ -z "$TARGET" ]; then
   echo "Setting TARGET automatically";
@@ -30,7 +30,7 @@ echo "Making TARGET   = $TARGET"
 echo "Using STARTJOB = $STARTJOB"
 
 echo "Making ACL2"
-$STARTJOB -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.log" \
+bash -c "nice make acl2 -f books/build/jenkins/Makefile LISP=$LISP &> make.log" \
   --name "J_CCL_ACL2" \
   --limits "pmem=4gb,nodes=1:ppn=1,walltime=10:00"
 
