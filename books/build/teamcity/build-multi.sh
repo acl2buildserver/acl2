@@ -86,7 +86,7 @@ bash -c "make acl2${ACL2_SUFFIX} -f books/build/jenkins/Makefile LISP=$LISP &> m
 echo "Building the books."
 cd books
  # inherit USE_QUICKLISP for the following make call
-bash -c "nice -n 19 time make $TARGET ACL2=`pwd`/saved_acl2$ACL2_SUFFIX -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS"
+bash -c "nice -n 19 time make $TARGET ACL2=`pwd`/../saved_acl2$ACL2_SUFFIX -j $BOOK_PARALLELISM_LEVEL $MAKEOPTS"
 
 echo "Build was successful."
 
