@@ -10,8 +10,8 @@
 
 (in-package "APT")
 
-(include-book "kestrel/apt/utilities/xdoc-constructors" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "utilities/xdoc-constructors")
 
 ; (depends-on "design-notes/expdata.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -19,12 +19,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *expdata-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/expdata.pdf"
-               "@('expdata') design notes"))
+  (xdoc::&& "@('expdata') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/expdata.pdf"
+                         "design notes")))
 
 (defconst *isodata-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf"
-               "@('isodata') design notes"))
+  (xdoc::&& "@('isodata') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -128,30 +130,30 @@
       Given that, as noted above,
       the current version of @('expdata') is very similar to @(tsee isodata),
       the @('expdata') design notes mostly refer to
-      the @(tsee isodata) design notes;
+      the " *isodata-design-notes* ";
       thus, the @(tsee isodata) design notes should be read as well."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::evmac-section-form
     (xdoc::codeblock
-     " (expdata old"
-     "          surjmaps"
-     "          :predicate           ; default nil"
-     "          :new-name            ; default :auto"
-     "          :new-enable          ; default :auto"
-     "          :old-to-new-name     ; default from table"
-     "          :old-to-new-enable   ; default from table"
-     "          :new-to-old-name     ; default from table"
-     "          :new-to-old-enable   ; default from table"
-     "          :newp-of-new-name    ; default :auto"
-     "          :newp-of-new-enable  ; default t"
-     "          :verify-guards       ; default :auto"
-     "          :untranslate         ; default :nice"
-     "          :hints               ; default nil"
-     "          :print               ; default :result"
-     "          :show-only           ; default nil"
-     "          )"))
+     "(expdata old"
+     "         surjmaps"
+     "         :predicate           ; default nil"
+     "         :new-name            ; default :auto"
+     "         :new-enable          ; default :auto"
+     "         :old-to-new-name     ; default from table"
+     "         :old-to-new-enable   ; default from table"
+     "         :new-to-old-name     ; default from table"
+     "         :new-to-old-enable   ; default from table"
+     "         :newp-of-new-name    ; default :auto"
+     "         :newp-of-new-enable  ; default t"
+     "         :verify-guards       ; default :auto"
+     "         :untranslate         ; default :nice"
+     "         :hints               ; default nil"
+     "         :print               ; default :result"
+     "         :show-only           ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

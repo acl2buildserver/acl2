@@ -104,12 +104,7 @@
       nil))
   (must-fail (tailrec f)))
 
- ;; first branch calls function:
- (must-succeed*
-  (defun f (x) (if (consp x) (f (cdr x)) nil))
-  (must-fail (tailrec f)))
-
- ;; first branch is not ground and variant is :MONOID or :MONOID-ALT:
+ ;; base branch is not ground and variant is :MONOID or :MONOID-ALT:
  (must-succeed*
   (defun f (x) (if (atom x) (list x) (f (cdr x))))
   (must-fail (tailrec f :variant :monoid))
@@ -704,7 +699,7 @@
 
 (must-succeed*
 
- (test-title "Test the :NON-EXECUTABLE option.")
+ (test-title "Test non-executability.")
 
  ;; least upper bound in lattice consisting of NIL as bottom, T as top,
  ;; and all the other values between NIL and T and incomparable to each other:
@@ -714,55 +709,24 @@
          ((equal x y) x)
          (t t)))
 
- ;; target function:
+ ;; executable target function:
  (defun f (x) (if (atom x) nil (lub (car x) (f (cdr x)))))
+ (assert! (not (non-executablep 'f (w state))))
 
  ;; non-executable target function:
  (defun-nx g (x) (if (atom x) nil (lub (car x) (g (cdr x)))))
+ (assert! (non-executablep 'g (w state)))
 
- ;; not T, NIL, or :AUTO:
- (must-fail (tailrec f :non-executable "t"))
- (must-fail (tailrec g :non-executable 0))
+ ;; transforming F preserves executability:
+ (tailrec f)
+ (assert! (not (non-executablep 'f{1} (w state))))
+ (assert! (not (non-executablep 'f{1}-wrapper (w state))))
 
- ;; default, with target function not non-executable:
- (must-succeed*
-  (tailrec f)
-  (assert! (not (non-executablep 'f{1} (w state)))))
-
- ;; default, with target function non-executable:
- (must-succeed*
-  (tailrec g)
-  (assert! (non-executablep 'g{1} (w state))))
-
- ;; automatic, with target function not non-executable:
- (must-succeed*
-  (tailrec f :non-executable :auto)
-  (assert! (not (non-executablep 'f{1} (w state)))))
-
- ;; automatic, with target function non-executable:
- (must-succeed*
-  (tailrec g :non-executable :auto)
-  (assert! (non-executablep 'g{1} (w state))))
-
- ;; make non-executable, with target function not non-executable:
- (must-succeed*
-  (tailrec f :non-executable t)
-  (assert! (non-executablep 'f{1} (w state))))
-
- ;; make non-executable, with target function non-executable:
- (must-succeed*
-  (tailrec g :non-executable t)
-  (assert! (non-executablep 'g{1} (w state))))
-
- ;; do not make non-executable, with target function not non-executable:
- (must-succeed*
-  (tailrec f :non-executable nil)
-  (assert! (not (non-executablep 'f{1} (w state)))))
-
- ;; do not make non-executable, with target function non-executable:
- (must-succeed*
-  (tailrec g :non-executable nil)
-  (assert! (not (non-executablep 'g{1} (w state))))))
+ ;; transforming G preserves non-executability:
+ (tailrec g)
+ (assert! (non-executablep 'g{1} (w state)))
+ ;; but the wrapper is always executable:
+ (assert! (not (non-executablep 'g{1}-wrapper (w state)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1095,6 +1059,20 @@
    (must-be-redundant (tailrec f :verify-guards nil)))
   (must-fail-local
    (must-be-redundant (tailrec f :new-name f-new)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(must-succeed*
+
+ (test-title "Test handling of swapped base and recursive branches.")
+
+ (defun fact (n)
+   (declare (xargs :guard (natp n)))
+   (if (not (zp n))
+       (* n (fact (1- n)))
+     1))
+
+ (tailrec fact))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

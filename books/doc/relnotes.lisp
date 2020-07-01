@@ -177,6 +177,16 @@
      Utilities to set and retrieve certain defaults have also been added.")
 
    (xdoc::p
+    "A new expanded data transformation, @(tsee apt::expdata), has been added.
+     This can realize data type refinements where
+     each instance of the old data may be represented by
+     multiple instances of the new data,
+     according to a surjective mapping from the new to the old data.
+     These are more general data type refinements than @(tsee apt::isodata),
+     but the transformation is not inherently reversible
+     (e.g. for raising the level of abstraction in program analysis).")
+
+   (xdoc::p
     "The @(tsee apt::isodata) transformation has been improved as follows:")
    (xdoc::ul
     (xdoc::li
@@ -216,6 +226,22 @@
       to specify whether the @('newp-of-new') theorem is enabled or not.
       This input is allowed only if some result is being transformed,
       because otherwise no @('newp-of-new') theorems is generated."))
+
+   (xdoc::p
+    "The @(tsee apt::tailrec) transformation has been improved as follows:")
+   (xdoc::ul
+    (xdoc::li
+     "The transformation has been simplified
+      by removing the @(':non-executable') option,
+      which does not seem necessary or useful.
+      The new function is marked non-executable
+      if and only if the target function is;
+      the wrapper is never marked non-executable.")
+    (xdoc::li
+     "The transformation also accepts functions whose @(tsee if) body,
+      after translation and @(tsee let) expansion,
+      have a recursive `then' branch and a non-recursive `else' branch.
+      This makes the transformation more widely applicable."))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -451,6 +477,10 @@
      to check if a term is a all of @(tsee if)
      and to return its three arguments if that is the case.")
 
+   (xdoc::p
+    "A new utility @(tsee fresh-name-listp-msg-weak) has been added,
+     which lifts @(tsee fresh-namep-msg-weak) to lists.")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h4 (xdoc::seetopic "std/testing" "Standard Testing Library"))
@@ -521,6 +551,10 @@
 
    (xdoc::h3 "Build System Updates")
 
+   (xdoc::p
+    "By default, @('make') commands for certifying ACL2 books take advantage of
+     files @('*@useless-runes.lsp').  See @(see useless-runes).")
+
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Testing")
@@ -528,6 +562,11 @@
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
    (xdoc::h3 "Miscellaneous")
+
+   (xdoc::p
+    "The line containing @('#!/bin/bash') at the top of various shell scripts
+     has been replaced by a line containing @('#!/usr/bin/env bash'), for
+     increased portability.")
 
    ))
 

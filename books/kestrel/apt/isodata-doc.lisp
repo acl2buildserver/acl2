@@ -10,8 +10,8 @@
 
 (in-package "APT")
 
-(include-book "kestrel/apt/utilities/xdoc-constructors" :dir :system)
 (include-book "kestrel/event-macros/xdoc-constructors" :dir :system)
+(include-book "utilities/xdoc-constructors")
 
 ; (depends-on "design-notes/isodata.pdf")
 ; (depends-on "kestrel/design-notes/notation.pdf" :dir :system)
@@ -19,8 +19,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst *isodata-design-notes*
-  (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf"
-               "@('isodata') design notes"))
+  (xdoc::&& "@('isodata') "
+            (xdoc::ahref "res/kestrel-apt-design-notes/isodata.pdf"
+                         "design notes")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -112,24 +113,24 @@
 
    (xdoc::evmac-section-form
     (xdoc::codeblock
-     " (isodata old"
-     "          isomaps"
-     "          :predicate           ; default nil"
-     "          :new-name            ; default :auto"
-     "          :new-enable          ; default :auto"
-     "          :old-to-new-name     ; default from table"
-     "          :old-to-new-enable   ; default from table"
-     "          :new-to-old-name     ; default from table"
-     "          :new-to-old-enable   ; default from table"
-     "          :newp-of-new-name    ; default :auto"
-     "          :newp-of-new-enable  ; default t"
-     "          :verify-guards       ; default :auto"
-     "          :untranslate         ; default :nice"
-     "          :hints               ; default nil"
-     "          :print               ; default :result"
-     "          :show-only           ; default nil"
-     "          :compatibility       ; default nil"
-     "          )"))
+     "(isodata old"
+     "         isomaps"
+     "         :predicate           ; default nil"
+     "         :new-name            ; default :auto"
+     "         :new-enable          ; default :auto"
+     "         :old-to-new-name     ; default from table"
+     "         :old-to-new-enable   ; default from table"
+     "         :new-to-old-name     ; default from table"
+     "         :new-to-old-enable   ; default from table"
+     "         :newp-of-new-name    ; default :auto"
+     "         :newp-of-new-enable  ; default t"
+     "         :verify-guards       ; default :auto"
+     "         :untranslate         ; default :nice"
+     "         :hints               ; default nil"
+     "         :print               ; default :result"
+     "         :show-only           ; default nil"
+     "         :compatibility       ; default nil"
+     "  )"))
 
    ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

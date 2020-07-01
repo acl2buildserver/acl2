@@ -50,7 +50,6 @@
    @('wrapper-enable'),
    @('thm-name'),
    @('thm-enable'),
-   @('non-executable'),
    @('verify-guards'),
    @('hints'),
    @('print'), and
@@ -77,7 +76,6 @@
    @('wrapper-enable$'),
    @('thm-name$'),
    @('thm-enable$'),
-   @('non-executable$'),
    @('verify-guards$'),
    @('hints$'),
    @('print$'), and
@@ -388,12 +386,25 @@
                  (unwrapped-nonexec-body old$ wrld)
                (ubody old$ wrld)))
        (body (remove-lambdas body))
-       ((er (list test base combine-nonrec-reccall))
+       ((er (list test then else))
         (ensure-term-if-call$ body
                               (msg "After translation and LET expansion, ~
                                     the body ~x0 of the target function ~x1"
                                    body old$)
                               t nil))
+       (then-calls-old-p (ffnnamep old$ then))
+       (else-calls-old-p (ffnnamep old$ else))
+       ((when (and then-calls-old-p else-calls-old-p))
+        (er-soft+ ctx t nil
+                  "After translation and LET expansion, ~
+                   the body ~x0 of the target fuction ~x1 ~
+                   must have one non-recursive top-level IF branch;
+                   however, both branches call ~x1."
+                  body old$))
+       ((mv test base combine-nonrec-reccall)
+        (if then-calls-old-p
+            (mv (dumb-negate-lit test) else then)
+          (mv test then else)))
        ((er &) (ensure-term-does-not-call$
                 test old$
                 (msg "After translation and LET expansion, ~
@@ -401,19 +412,12 @@
                       of the target function ~x1"
                      test old$)
                 t nil))
-       ((er &) (ensure-term-does-not-call$
-                base old$
-                (msg "After translation and LET expansion, ~
-                      the first branch ~x0 ~
-                      of the target function ~x1"
-                     base old$)
-                t nil))
        ((er &) (if (member-eq variant '(:monoid :monoid-alt))
                    (ensure-term-ground$
                     base
                     (msg "Since the :VARIANT input is ~s0~x1, ~
                           after translation and LET expansion, ~
-                          the first branch ~x2 ~
+                          the non-recursive branch ~x2 ~
                           of the target function ~x3"
                          (if (eq variant :monoid)
                              "(perhaps by default) "
@@ -454,7 +458,8 @@
 
 (def-error-checker tailrec-process-variant
   (variant)
-  "Process the @('variant') input."
+  :short "Process the @('variant') input."
+  :body
   (((tailrec-variantp variant)
     "~@0 must be :MONOID, :MONOID-ALT, or :ASSOC." description)))
 
@@ -733,7 +738,6 @@
                                 (wrapper-enable-present booleanp)
                                 thm-name
                                 thm-enable
-                                non-executable
                                 verify-guards
                                 hints
                                 print
@@ -754,7 +758,6 @@
                                     new-enable$
                                     wrapper-name$
                                     thm-name$
-                                    non-executable$
                                     verify-guards$
                                     hints$)')
                         satisfying
@@ -772,7 +775,6 @@
                                          symbolp
                                          symbolp
                                          booleanp
-                                         booleanp
                                          symbol-alistp
                                          result)'),
                         where the first 8 components are
@@ -786,10 +788,7 @@
                         @('wrapper-name$') is
                         the result of @(tsee tailrec-process-wrapper-name),
                         @('thm-name$') is
-                        the result of @(tsee tailrec-process-thm-name),
-                        @('non-executable') indicates whether
-                        the new and wrapper functions should be
-                        non-executable or not, and
+                        the result of @(tsee tailrec-process-thm-name), and
                         @('verify-guards$') indicates whether the guards of
                         the new and wrapper functions
                         should be verified or not, and
@@ -852,10 +851,6 @@
                         old$ new-name$ wrapper wrapper-name$
                         ctx state))
        ((er &) (ensure-boolean$ thm-enable "The :THM-ENABLE input" t nil))
-       ((er non-executable$) (ensure-boolean-or-auto-and-return-boolean$
-                              non-executable
-                              (non-executablep old wrld)
-                              "The :NON-EXECUTABLE input" t nil))
        ((er hints$) (evmac-process-input-hints hints ctx state))
        ((er &) (evmac-process-input-show-only show-only ctx state)))
     (value (list old$
@@ -871,7 +866,6 @@
                  new-enable$
                  wrapper-name$
                  thm-name$
-                 non-executable$
                  verify-guards$
                  hints$))))
 
@@ -1148,7 +1142,6 @@
                             (domain$ pseudo-termfnp)
                             (new-name$ symbolp)
                             (new-enable$ booleanp)
-                            (non-executable$ booleanp)
                             (verify-guards$ booleanp)
                             (appcond-thm-names symbol-symbol-alistp)
                             (wrld plist-worldp))
@@ -1162,6 +1155,7 @@
    The macro used to introduce the new function is determined by
    whether the new function must be
    enabled or not, and non-executable or not.
+   We make it non-executable if and only if @('old') is non-executable.
    </p>
    <p>
    The formals of the new function consist of
@@ -1199,7 +1193,7 @@
    We use the hints for the latter case also for the former case
    (which will ignore some of the supplied facts).
    </p>"
-  (b* ((macro (function-intro-macro new-enable$ non-executable$))
+  (b* ((macro (function-intro-macro new-enable$ (non-executablep old$ wrld)))
        (formals (rcons r (formals old$ wrld)))
        (body
         (b* ((combine-op (tailrec-gen-combine-op combine q r))
@@ -1929,8 +1923,7 @@
                  `(:instance ,combine-left-identity-ground-name
                    :extra-bindings-ok
                    (,(tailrec-gen-id-var-u old$ wrld)
-                    ,(apply-term old$ (formals old$
-                                               wrld)))))
+                    ,(apply-term old$ (formals old$ wrld)))))
                 (new-to-old-instance
                  `(:instance ,new-to-old-name
                    :extra-bindings-ok
@@ -1976,7 +1969,6 @@
                                 (new-name$ symbolp)
                                 (wrapper-name$ symbolp)
                                 (wrapper-enable$ booleanp)
-                                (non-executable$ booleanp)
                                 (verify-guards$ booleanp)
                                 (appcond-thm-names symbol-symbol-alistp)
                                 (domain-of-ground-base-name symbolp)
@@ -1990,8 +1982,8 @@
   :long
   "<p>
    The macro used to introduce the new function is determined by
-   whether the new function must be
-   enabled or not, and non-executable or not.
+   whether the new function must be enabled or not.
+   We always make it executable, since there seems to be no reason not to.
    </p>
    <p>
    The wrapper function has the same formal arguments as the old function.
@@ -2013,7 +2005,7 @@
    <p>
    This function is called only if the @(':wrapper') input is @('t').
    </p>"
-  (b* ((macro (function-intro-macro wrapper-enable$ non-executable$))
+  (b* ((macro (function-intro-macro wrapper-enable$ nil))
        (formals (formals old$ wrld))
        (body (tailrec-gen-old-as-new-term
               old$ test base nonrec updates r variant$
@@ -2117,7 +2109,6 @@
    (wrapper-enable$ booleanp)
    (thm-name$ symbolp)
    (thm-enable$ booleanp)
-   (non-executable$ booleanp)
    (verify-guards$ booleanp)
    (hints$ symbol-alistp)
    (print$ evmac-input-print-p)
@@ -2208,66 +2199,67 @@
         (evmac-appcond-theorems-no-extra-hints
          appconds hints$ names-to-avoid print$ ctx state))
        ((mv old-unnorm-event
-            old-unnorm-name) (install-not-normalized-event old$
-            t
-            names-to-avoid
-            wrld))
+            old-unnorm-name)
+        (install-not-normalized-event old$
+                                      t
+                                      names-to-avoid
+                                      wrld))
        (names-to-avoid (cons old-unnorm-name names-to-avoid))
        ((mv domain-of-old-event
-            domain-of-old-name) (tailrec-gen-domain-of-old-thm
-            old$ test nonrec updates
-            variant$ domain$
-            names-to-avoid
-            appcond-thm-names
-            old-unnorm-name
-            wrld))
+            domain-of-old-name)
+        (tailrec-gen-domain-of-old-thm old$ test nonrec updates
+                                       variant$ domain$
+                                       names-to-avoid
+                                       appcond-thm-names
+                                       old-unnorm-name
+                                       wrld))
        (names-to-avoid (cons domain-of-old-name names-to-avoid))
        ((mv new-fn-local-event
             new-fn-exported-event
-            new-formals) (tailrec-gen-new-fn
-            old$
-            test base nonrec updates combine q r
-            variant$ domain$
-            new-name$ new-enable$
-            non-executable$ verify-guards$
-            appcond-thm-names
-            wrld))
+            new-formals)
+        (tailrec-gen-new-fn old$
+                            test base nonrec updates combine q r
+                            variant$ domain$
+                            new-name$ new-enable$
+                            verify-guards$
+                            appcond-thm-names
+                            wrld))
        ((mv new-unnorm-event
-            new-unnorm-name) (install-not-normalized-event new-name$
-            t
-            names-to-avoid
-            wrld))
+            new-unnorm-name)
+        (install-not-normalized-event new-name$
+                                      t
+                                      names-to-avoid
+                                      wrld))
        (names-to-avoid (cons new-unnorm-name names-to-avoid))
        ((mv new-to-old-event
-            new-to-old-name) (tailrec-gen-new-to-old-thm
-            old$ nonrec updates combine q r
-            variant$ domain$
-            new-name$
-            names-to-avoid
-            appcond-thm-names
-            old-unnorm-name
-            domain-of-old-name
-            new-formals
-            new-unnorm-name
-            wrld))
+            new-to-old-name)
+        (tailrec-gen-new-to-old-thm old$ nonrec updates combine q r
+                                    variant$ domain$
+                                    new-name$
+                                    names-to-avoid
+                                    appcond-thm-names
+                                    old-unnorm-name
+                                    domain-of-old-name
+                                    new-formals
+                                    new-unnorm-name
+                                    wrld))
        (names-to-avoid (cons new-to-old-name names-to-avoid))
        (gen-alpha (member-eq variant$ '(:monoid :monoid-alt)))
        ((mv alpha-event?
-            alpha-name?) (if gen-alpha
-            (tailrec-gen-alpha-fn
-             old$ test updates
-             names-to-avoid wrld)
-            (mv nil nil)))
+            alpha-name?)
+        (if gen-alpha
+            (tailrec-gen-alpha-fn old$ test updates names-to-avoid wrld)
+          (mv nil nil)))
        (names-to-avoid (if gen-alpha
                            (cons alpha-name? names-to-avoid)
                          names-to-avoid))
        ((mv test-of-alpha-event?
-            test-of-alpha-name?) (if gen-alpha
-            (tailrec-gen-test-of-alpha-thm
-             old$ test
-             alpha-name?
-             names-to-avoid wrld)
-            (mv nil nil)))
+            test-of-alpha-name?)
+        (if gen-alpha
+            (tailrec-gen-test-of-alpha-thm old$ test
+                                           alpha-name?
+                                           names-to-avoid wrld)
+          (mv nil nil)))
        (names-to-avoid (if gen-alpha
                            (cons test-of-alpha-name? names-to-avoid)
                          names-to-avoid))
@@ -2309,11 +2301,10 @@
        ((mv base-guard-event?
             base-guard-name?) (if (and gen-alpha
                                        verify-guards$)
-            (tailrec-gen-base-guard-thm
-             old$ base
-             alpha-name? test-of-alpha-name?
-             old-guard-of-alpha-name?
-             names-to-avoid state)
+            (tailrec-gen-base-guard-thm old$ base
+                                        alpha-name? test-of-alpha-name?
+                                        old-guard-of-alpha-name?
+                                        names-to-avoid state)
             (mv nil nil)))
        (names-to-avoid (if (and gen-alpha
                                 verify-guards$)
@@ -2321,55 +2312,56 @@
                          names-to-avoid))
        ((mv old-to-new-thm-local-event
             old-to-new-thm-exported-event?
-            old-to-new-name) (tailrec-gen-old-to-new-thm
-            old$ test base nonrec updates r
-            variant$
-            new-name$
-            wrapper$
-            thm-name$
-            names-to-avoid
-            appcond-thm-names
-            domain-of-old-name
-            domain-of-ground-base-name?
-            combine-left-identity-ground-name?
-            new-formals
-            new-to-old-name
-            wrld))
+            old-to-new-name)
+        (tailrec-gen-old-to-new-thm old$ test base nonrec updates r
+                                    variant$
+                                    new-name$
+                                    wrapper$
+                                    thm-name$
+                                    names-to-avoid
+                                    appcond-thm-names
+                                    domain-of-old-name
+                                    domain-of-ground-base-name?
+                                    combine-left-identity-ground-name?
+                                    new-formals
+                                    new-to-old-name
+                                    wrld))
        (names-to-avoid (cons old-to-new-name names-to-avoid))
        ((mv wrapper-fn-local-event?
-            wrapper-fn-exported-event?) (if wrapper$
-            (tailrec-gen-wrapper-fn
-             old$
-             test base nonrec updates r
-             variant$
-             new-name$
-             wrapper-name$ wrapper-enable$
-             non-executable$ verify-guards$
-             appcond-thm-names
-             domain-of-ground-base-name?
-             base-guard-name?
-             new-formals
-             wrld)
-            (mv nil nil)))
+            wrapper-fn-exported-event?)
+        (if wrapper$
+            (tailrec-gen-wrapper-fn old$
+                                    test base nonrec updates r
+                                    variant$
+                                    new-name$
+                                    wrapper-name$ wrapper-enable$
+                                    verify-guards$
+                                    appcond-thm-names
+                                    domain-of-ground-base-name?
+                                    base-guard-name?
+                                    new-formals
+                                    wrld)
+          (mv nil nil)))
        ((mv wrapper-unnorm-event?
-            wrapper-unnorm-name?) (if wrapper$
+            wrapper-unnorm-name?)
+        (if wrapper$
             (install-not-normalized-event wrapper-name$
                                           t
                                           names-to-avoid
                                           wrld)
-            (mv nil nil)))
+          (mv nil nil)))
        ((mv
          old-to-wrapper-thm-local-event?
-         old-to-wrapper-thm-exported-event?) (if wrapper$
-         (tailrec-gen-old-to-wrapper-thm
-          old$
-          wrapper-name$
-          thm-name$
-          thm-enable$
-          old-to-new-name
-          wrapper-unnorm-name?
-          wrld)
-         (mv nil nil)))
+         old-to-wrapper-thm-exported-event?)
+        (if wrapper$
+            (tailrec-gen-old-to-wrapper-thm old$
+                                            wrapper-name$
+                                            thm-name$
+                                            thm-enable$
+                                            old-to-new-name
+                                            wrapper-unnorm-name?
+                                            wrld)
+          (mv nil nil)))
        (new-fn-numbered-name-event `(add-numbered-name-in-use
                                      ,new-name$))
        (wrapper-fn-numbered-name-event? (if wrapper$
@@ -2456,7 +2448,6 @@
                     (wrapper-enable-present booleanp)
                     thm-name
                     thm-enable
-                    non-executable
                     verify-guards
                     hints
                     print
@@ -2497,7 +2488,6 @@
                   new-enable$
                   wrapper-name$
                   thm-name$
-                  non-executable$
                   verify-guards$
                   hints$))
         (tailrec-process-inputs old
@@ -2512,7 +2502,6 @@
                                 wrapper-enable-present
                                 thm-name
                                 thm-enable
-                                non-executable
                                 verify-guards
                                 hints
                                 print
@@ -2536,7 +2525,6 @@
                                            wrapper-enable
                                            thm-name$
                                            thm-enable
-                                           non-executable$
                                            verify-guards$
                                            hints$
                                            print
@@ -2571,7 +2559,6 @@
                      (wrapper-enable 't wrapper-enable-present)
                      (thm-name ':auto)
                      (thm-enable 't)
-                     (non-executable ':auto)
                      (verify-guards ':auto)
                      (hints 'nil)
                      (print ':result)
@@ -2588,7 +2575,6 @@
                                    ',wrapper-enable-present
                                    ',thm-name
                                    ',thm-enable
-                                   ',non-executable
                                    ',verify-guards
                                    ',hints
                                    ',print
